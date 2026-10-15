@@ -1,0 +1,21 @@
+name: Daily No Smoking Email
+
+on:
+  schedule:
+    - cron: "30 3 * * *"   # 03:30 UTC = 9:00 AM IST
+  workflow_dispatch:        # lets you test it with a button
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: node send.js
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
