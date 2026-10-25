@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="favicon.png"><title>Phantom Radar</title>
+<style>
+:root{--g:#00ffaa;--c:#22d3ee;--m:#7fa89d}
+*{box-sizing:border-box;margin:0}
+body{background:#05080d;color:#d7fff2;font:16px/1.6 "Segoe UI",system-ui,sans-serif;overflow-x:hidden}
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:20px;padding:5vw;background:radial-gradient(900px 600px at 75% 45%,#0b2220,#05080d)}
+.logo{width:96px;height:96px;margin-bottom:18px;filter:drop-shadow(0 0 22px rgba(0,255,170,.55));animation:fl 4s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-8px)}}
+h1{font-size:clamp(38px,5.5vw,70px);line-height:1.05;color:#fff;letter-spacing:2px}
+h1 em{font-style:normal;color:var(--g);text-shadow:0 0 26px var(--g)}
+.by{color:var(--m);letter-spacing:4px;font-size:13px;margin-top:6px}
+p.l{color:var(--m);margin:16px 0 26px;max-width:500px;font-size:18px}
+.btn{display:inline-block;padding:15px 28px;border-radius:12px;background:linear-gradient(90deg,var(--g),var(--c));color:#04120e;font-weight:700;text-decoration:none;box-shadow:0 0 30px rgba(0,255,170,.4);transition:.2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 46px rgba(0,255,170,.7)}
+.btn.off{background:#12302a;color:var(--m);box-shadow:none;pointer-events:none}
+#msg{margin-top:14px;font-size:14px;color:var(--m);max-width:480px}#msg a{color:var(--c)}
+.alt{margin-top:14px;font-size:14px;color:var(--m)}.alt a{color:var(--c);margin-right:14px}
+canvas{width:100%;aspect-ratio:1;max-width:560px;justify-self:center}
+section{padding:70px 5vw;max-width:1100px;margin:auto}
+h2{font-size:30px;margin-bottom:26px;color:var(--g)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.card{padding:22px;border-radius:16px;background:rgba(0,255,170,.05);border:1px solid rgba(0,255,170,.2);transition:.25s}
+.card:hover{transform:translateY(-4px);border-color:var(--g)}.card b{color:var(--c)}
+ol{padding-left:22px;color:var(--m)}li{margin:8px 0}
+footer{text-align:center;padding:40px;color:var(--m);font-size:13px}
+@media(max-width:800px){.hero{grid-template-columns:1fr;text-align:center}p.l,#msg{margin-inline:auto}}
+</style></head><body>
+<div class="hero"><div>
+<img src="icon.png" alt="" class="logo">
+<h1><em>Phantom</em> Radar</h1><div class="by">BY ADWAITA</div>
+<p class="l">Detect every Bluetooth device in the air around you on a live, rotating radar. Phones, earbuds, watches, speakers and trackers are identified by brand and type, with signal strength and distance.</p>
+<a class="btn off" id="dl" href="#">Checking for the latest version…</a>
+<div id="msg"></div>
+<div class="alt" id="alt" hidden>All downloads: <a id="w" hidden>Windows</a><a id="ma" hidden>Mac (Apple chip)</a><a id="mi" hidden>Mac (Intel)</a><span id="ver"></span></div>
+</div><canvas id="c"></canvas></div>
+<section><h2>Why you'll like it</h2><div class="grid">
+<div class="card"><b>Real radar sweep</b><br>A rotating beam lights up each device as it passes, just like the real thing.</div>
+<div class="card"><b>Smart identification</b><br>Recognises brands like Realme, Motorola, Samsung, Apple and Google, and tells phones, buds and watches apart.</div>
+<div class="card"><b>Native app</b><br>Installs on Windows and Mac. No browser needed.</div></div></section>
+<section><h2>Install in 3 steps</h2><ol><li>Press Download and open the file.</li><li>Windows: follow the installer. Mac: drag the app into Applications, and the first time right-click it and choose Open.</li><li>Turn Bluetooth on, launch Phantom Radar, and allow Bluetooth access if asked.</li></ol></section>
+<footer>Made by Adwaita</footer>
+<noscript><p style="text-align:center;padding:20px">Please turn on JavaScript to see the download links.</p></noscript>
+<script>
+const REPO='duttareshmi2-ai/project',$=i=>document.getElementById(i);
+const mac=/Mac/.test(navigator.userAgent)&&!/iPhone|iPad/.test(navigator.userAgent);
+function put(el,a){if(a){el.href=a.browser_download_url;el.hidden=false;el.title=Math.round(a.size/1048576)+' MB'}}
+function wait(t){$('dl').textContent='Download coming soon';$('dl').className='btn off';$('msg').innerHTML=t+' <a href="https://github.com/'+REPO+'/actions">See build progress</a>'}
+(async()=>{try{
+ const r=await fetch('https://api.github.com/repos/'+REPO+'/releases?per_page=30');if(!r.ok)throw 0;
+ const rel=(await r.json()).find(x=>!x.draft&&/^radar-v/.test(x.tag_name)&&x.assets.some(a=>/\.(exe|dmg)$/.test(a.name)));
+ if(!rel)return wait('The installers are still being built. This takes about 10 minutes after a new release.');
+ const f=re=>rel.assets.find(a=>re.test(a.name)),win=f(/\.exe$/),arm=f(/arm64.*\.dmg$/),intel=f(/x64.*\.dmg$/);
+ put($('w'),win);put($('ma'),arm);put($('mi'),intel);$('alt').hidden=false;$('ver').textContent='  ·  '+rel.tag_name.replace('radar-','');
+ const main=mac?(arm||intel):win,other=mac?win:(arm||intel);
+ const pick=main||other;if(!pick)return wait('No installer was found in the latest release.');
+ $('dl').href=pick.browser_download_url;$('dl').className='btn';
+ $('dl').textContent=main?(mac?'Download for Mac':'Download for Windows'):'Download';
+}catch(e){wait('Could not reach the download server. Check your internet connection and refresh.')}})();
+const c=$('c'),x=c.getContext('2d');let S;
+function rs(){const d=devicePixelRatio||1;S=c.clientWidth;c.width=c.height=S*d;x.setTransform(d,0,0,d,0,0)}addEventListener('resize',rs);rs();
+const N=['Realme P1 5G','Motorola Razr','Galaxy Buds','Pixel Watch','JBL Speaker','Mi Band','MacBook','Tag'];
+const bl=N.map((n,i)=>({n,a:i*.8+Math.random(),r:.25+Math.random()*.65,p:0,v:(Math.random()-.5)*.05}));
+let sw=0,pv=0,t0=performance.now();
+(function f(t){const dt=Math.min(.05,(t-t0)/1e3);t0=t;pv=sw;sw=(sw+dt*1.5)%(Math.PI*2);const m=S/2,R=m*.92;x.clearRect(0,0,S,S);
+ x.strokeStyle='rgba(0,255,170,.3)';x.lineWidth=1;[.25,.5,.75,1].forEach(k=>{x.beginPath();x.arc(m,m,R*k,0,7);x.stroke()});
+ x.beginPath();x.moveTo(m-R,m);x.lineTo(m+R,m);x.moveTo(m,m-R);x.lineTo(m,m+R);x.strokeStyle='rgba(0,255,170,.12)';x.stroke();
+ const g=x.createConicGradient(sw-1.3,m,m);g.addColorStop(0,'rgba(0,255,170,0)');g.addColorStop(.207,'rgba(0,255,170,.45)');g.addColorStop(.208,'rgba(0,255,170,0)');g.addColorStop(1,'rgba(0,255,170,0)');
+ x.fillStyle=g;x.beginPath();x.arc(m,m,R,0,7);x.fill();
+ x.strokeStyle='#8fffd6';x.lineWidth=2;x.shadowColor='#00ffaa';x.shadowBlur=14;x.beginPath();x.moveTo(m,m);x.lineTo(m+Math.cos(sw)*R,m+Math.sin(sw)*R);x.stroke();x.shadowBlur=0;
+ const TP=Math.PI*2;bl.forEach(o=>{o.a=(o.a+o.v*dt+TP)%TP;if(((o.a-pv+TP)%TP)<=((sw-pv+TP)%TP))o.p=1;o.p=Math.max(0,o.p-dt*.3);
+  const px=m+Math.cos(o.a)*R*o.r,py=m+Math.sin(o.a)*R*o.r;x.shadowColor='#22d3ee';x.shadowBlur=16*o.p;x.fillStyle=`rgba(34,211,238,${.2+.8*o.p})`;x.beginPath();x.arc(px,py,4+o.p*3,0,7);x.fill();x.shadowBlur=0;
+  if(o.p>.3){x.fillStyle=`rgba(215,255,242,${o.p})`;x.font='13px Segoe UI';x.fillText(o.n,px+10,py+4)}});
+ requestAnimationFrame(f)})(t0);
+</script></body></html>

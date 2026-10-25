@@ -1,0 +1,47 @@
+name: Build Phantom Radar
+on:
+  push:
+    tags: ['radar-v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: phantom-radar/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - name: Build Windows installer
+        if: matrix.os == 'windows-latest'
+        run: npx electron-builder --win --publish never
+      - name: Build Mac installers
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac --arm64 --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            phantom-radar/app/dist/*.exe
+            phantom-radar/app/dist/*.dmg
+          if-no-files-found: error
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: dist
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" --title "Phantom Radar ${{ github.ref_name }}" --notes "Phantom Radar installers for Windows and Mac."

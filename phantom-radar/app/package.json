@@ -41,14 +41,6 @@
         "NSBluetoothPeripheralUsageDescription": "Phantom Radar scans for nearby Bluetooth devices."
       },
       "icon": "build/icon.png"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "duttareshmi2-ai",
-        "repo": "project",
-        "releaseType": "release"
-      }
-    ]
+    }
   }
 }
