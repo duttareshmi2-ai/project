@@ -1,4 +1,4 @@
-name: Build Bluetooth Radar installers
+name: Build Phantom Radar installers
 on:
   push:
     tags: ['radar-v*']

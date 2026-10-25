@@ -21,7 +21,7 @@ function startBle() {
       id: p.id || p.address, address: p.address || '', name: a.localName || '',
       rssi: p.rssi, connectable: !!p.connectable,
       mfr: m && m.length >= 2 ? m.readUInt16LE(0) : null,
-      services: (a.serviceUuids || []).length
+      services: a.serviceUuids || [], tx: (typeof a.txPowerLevel === 'number' ? a.txPowerLevel : null), md: m ? Array.from(m.slice(0, 8)) : null
     });
   });
 }
@@ -30,7 +30,7 @@ app.whenReady().then(() => {
   win = new BrowserWindow({
     width: 1180, height: 760, minWidth: 900, minHeight: 600,
     backgroundColor: '#05080d', autoHideMenuBar: true,
-    title: "Adwaita's Bluetooth Radar", icon: path.join(__dirname, 'renderer', 'icon.png'),
+    title: "Phantom Radar", icon: path.join(__dirname, 'renderer', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));

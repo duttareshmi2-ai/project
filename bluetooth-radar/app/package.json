@@ -1,7 +1,7 @@
 {
-  "name": "adwaitas-bluetooth-radar",
+  "name": "phantom-radar",
   "version": "1.0.0",
-  "description": "Adwaita's Bluetooth Radar",
+  "description": "Phantom Radar",
   "main": "main.js",
   "author": "Adwaita",
   "scripts": {
@@ -17,8 +17,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.adwaita.bluetoothradar",
-    "productName": "Adwaita's Bluetooth Radar",
+    "appId": "com.adwaita.phantomradar",
+    "productName": "Phantom Radar",
     "npmRebuild": false,
     "files": [
       "main.js",
@@ -28,17 +28,17 @@
     ],
     "win": {
       "target": "nsis",
-      "artifactName": "Adwaitas-Bluetooth-Radar-Setup.${ext}",
+      "artifactName": "Phantom-Radar-Setup.${ext}",
       "icon": "build/icon.ico"
     },
     "mac": {
       "target": "dmg",
       "identity": null,
       "category": "public.app-category.utilities",
-      "artifactName": "Adwaitas-Bluetooth-Radar-${arch}.${ext}",
+      "artifactName": "Phantom-Radar-${arch}.${ext}",
       "extendInfo": {
-        "NSBluetoothAlwaysUsageDescription": "Adwaita's Bluetooth Radar scans for nearby Bluetooth devices.",
-        "NSBluetoothPeripheralUsageDescription": "Adwaita's Bluetooth Radar scans for nearby Bluetooth devices."
+        "NSBluetoothAlwaysUsageDescription": "Phantom Radar scans for nearby Bluetooth devices.",
+        "NSBluetoothPeripheralUsageDescription": "Phantom Radar scans for nearby Bluetooth devices."
       },
       "icon": "build/icon.png"
     },

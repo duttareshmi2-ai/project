@@ -1,31 +1,35 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Adwaita's Bluetooth Radar</title>
+<html><head><meta charset="utf-8"><title>Phantom Radar</title>
 <style>
 :root{--bg:#05080d;--g:#00ffaa;--c:#22d3ee;--t:#d7fff2;--m:#6b8f86}
 *{box-sizing:border-box;margin:0}
 body{background:radial-gradient(1200px 700px at 30% 40%,#0a1a1a,#05080d);color:var(--t);font:14px/1.4 "Segoe UI",system-ui,sans-serif;height:100vh;display:flex;overflow:hidden}
 #stage{flex:1;position:relative;min-width:0}
 canvas{position:absolute;inset:0;width:100%;height:100%}
-h1{position:absolute;left:28px;top:22px;font-size:20px;letter-spacing:3px;text-transform:uppercase;color:var(--g);text-shadow:0 0 14px var(--g)}
+h1{position:absolute;left:28px;top:22px;font-size:22px;letter-spacing:5px;text-transform:uppercase;color:var(--g);text-shadow:0 0 14px var(--g)}
 h1 small{display:block;font-size:11px;letter-spacing:2px;color:var(--m);text-shadow:none;margin-top:2px}
-#note{position:absolute;left:28px;bottom:16px;font-size:11px;color:var(--m)}
-aside{width:350px;padding:18px;display:flex;flex-direction:column;gap:12px;background:rgba(10,24,24,.55);backdrop-filter:blur(10px);border-left:1px solid rgba(0,255,170,.18)}
+#note{position:absolute;left:28px;bottom:16px;font-size:11px;color:var(--m);max-width:80%}
+aside{width:360px;padding:18px;display:flex;flex-direction:column;gap:12px;background:rgba(10,24,24,.55);backdrop-filter:blur(10px);border-left:1px solid rgba(0,255,170,.18)}
 #chip{padding:8px 12px;border-radius:999px;border:1px solid rgba(0,255,170,.35);font-size:12px;display:flex;align-items:center;gap:8px}
 #chip i{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g);animation:p 1.2s infinite}
 #chip.bad i{background:#ff5470;box-shadow:0 0 10px #ff5470}
 @keyframes p{50%{opacity:.25}}
 #list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
-.it{padding:9px 11px;border-radius:10px;background:rgba(0,255,170,.05);border:1px solid transparent;cursor:pointer;transition:.2s}
+.it{padding:9px 11px;border-radius:10px;background:rgba(0,255,170,.05);border:1px solid transparent;cursor:pointer;transition:.2s;display:flex;gap:10px;align-items:center}
 .it:hover,.it.sel{border-color:var(--g);background:rgba(0,255,170,.12)}
+.it .ic{font-size:22px;width:28px;text-align:center}
 .it b{display:block;font-weight:600}
 .it span{font-size:12px;color:var(--m)}
-#det{padding:12px;border-radius:12px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.06);font-size:12.5px;min-height:128px}
+#det{padding:12px;border-radius:12px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.06);font-size:12.5px;min-height:150px}
 #det h3{color:var(--c);font-size:14px;margin-bottom:6px}
-#det div{display:flex;justify-content:space-between;padding:2px 0}#det div span{color:var(--m)}
+#dinfo div{display:flex;justify-content:space-between;padding:2px 0}#dinfo div span{color:var(--m)}
+#rn{display:flex;gap:6px;margin-top:8px}
+#rn input{flex:1;background:#06120f;border:1px solid rgba(0,255,170,.3);color:var(--t);border-radius:8px;padding:6px 8px;outline:none}
+#rn button{background:var(--g);color:#04120e;border:0;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
 </style></head><body>
 <div id="stage"><canvas id="radar"></canvas>
-<h1>Adwaita's Bluetooth Radar<small id="count">0 devices nearby</small></h1>
-<div id="note">Bluetooth measures signal strength, not direction. Distance is estimated from RSSI; each device's angle is just its fixed slot.</div></div>
+<h1>Phantom Radar<small id="count">0 devices nearby</small></h1>
+<div id="note">Bluetooth gives signal strength, not direction, so distance is estimated and each device's angle is just its fixed slot. Many phones hide their model name; use Rename to label them.</div></div>
 <aside><div id="chip"><i></i><span id="st">Starting…</span></div>
 <div id="list"></div>
 <div id="det"><h3>Select a device</h3><span style="color:var(--m)">Click a blip or a list item for details.</span></div></aside>
@@ -34,22 +38,44 @@ const C=document.getElementById('radar'),x=C.getContext('2d');
 let W,H;
 function resize(){const d=devicePixelRatio||1,r=C.parentElement.getBoundingClientRect();W=r.width;H=r.height;C.width=W*d;C.height=H*d;x.setTransform(d,0,0,d,0,0)}
 addEventListener('resize',resize);resize();
-const MFR={0x4c:'Apple',0x06:'Microsoft',0x75:'Samsung',0xe0:'Google',0x87:'Garmin',0x12d:'Sony',0x2c:'Bose',0x59:'Nordic',0x9e:'Bose',0x1d7:'Xiaomi',0x38f:'Xiaomi',0x157:'Huami',0xd:'Texas Instruments'};
-const devs=new Map();let sel=null,sweep=0,prev=0,last=performance.now();
+
+/* ---------- identification ---------- */
+const MFR={0x4c:'Apple',0x06:'Microsoft',0x75:'Samsung',0xe0:'Google',0x08:'Motorola',0x87:'Garmin',0x12d:'Sony',0x9e:'Bose',0x2c:'Bose',0x59:'Nordic',0x38f:'Xiaomi',0x1d7:'Xiaomi',0x157:'Huami',0x27d:'Huawei'};
+const BRANDS=[[/realme|rmx\d{3,4}/i,'Realme'],[/razr|moto|motorola|xt\d{4}/i,'Motorola'],[/galaxy|samsung|sm-[a-z]\d{3}/i,'Samsung'],[/pixel/i,'Google'],[/iphone|ipad|macbook|imac|airpods|apple|airtag/i,'Apple'],[/redmi|poco|xiaomi|mi band|mi smart|mi (?:watch|speaker)/i,'Xiaomi'],[/oneplus|\bnord\b/i,'OnePlus'],[/oppo|cph\d{4}/i,'OPPO'],[/vivo|iqoo/i,'vivo'],[/nothing|cmf/i,'Nothing'],[/infinix|tecno|itel/i,'Transsion'],[/huawei|honor/i,'Huawei'],[/jbl/i,'JBL'],[/boat|rockerz|airdopes/i,'boAt'],[/sony|wh-|wf-|srs-/i,'Sony'],[/bose/i,'Bose'],[/amazfit/i,'Amazfit'],[/fitbit/i,'Fitbit'],[/garmin/i,'Garmin']];
+const KINDS={phone:['📱','Phone','#22d3ee'],buds:['🎧','Earbuds / headset','#ff5cd6'],watch:['⌚','Watch / band','#ffb020'],speaker:['🔊','Speaker','#ff7a59'],pc:['💻','Computer','#8b9cff'],tv:['📺','TV / streamer','#a78bfa'],tag:['📍','Tracker tag','#fde047'],car:['🚗','Car','#fb923c'],input:['⌨️','Mouse / keyboard','#5eead4'],home:['💡','Smart home','#facc15'],unk:['❔','Unidentified','#7dd3c0']};
+const KRULES=[[/buds|airpods|airdopes|earbud|earphone|headset|headphone|neckband|rockerz|wf-|wh-|tws/i,'buds'],[/watch|band|fit|amazfit|gt\d/i,'watch'],[/speaker|soundbar|boom|flip|charge|srs-|echo|home mini/i,'speaker'],[/macbook|laptop|desktop|\bpc\b|thinkpad|surface|imac/i,'pc'],[/\btv\b|bravia|roku|fire ?stick|chromecast|mi box/i,'tv'],[/tag|tile|tracker|airtag/i,'tag'],[/\bcar\b|honda|toyota|hyundai|kia|tata|mahindra|bmw|audi|mg /i,'car'],[/mouse|keyboard|mx |k380|trackpad/i,'input'],[/bulb|light|plug|lock|wiz|tapo|yeelight/i,'home'],[/iphone|ipad|galaxy|pixel|razr|moto|realme|redmi|poco|oneplus|oppo|vivo|nothing phone|\b5g\b|\b4g\b|sm-[a-z]\d/i,'phone']];
+const CDP={1:['Xbox','tv'],6:['iPhone','phone'],7:['iPad','phone'],8:['Android phone','phone'],9:['Windows PC','pc'],11:['Windows phone','phone'],12:['Linux PC','pc'],14:['Surface Hub','pc']};
+const names=JSON.parse(localStorage.getItem('radar.names')||'{}');
+function ident(o){
+ let brand=null,kind=null,model=null;const n=o.name||'';
+ for(const[r,b]of BRANDS)if(r.test(n)){brand=b;break}
+ for(const[r,k]of KRULES)if(r.test(n)){kind=k;break}
+ if(!brand&&o.mfr!=null)brand=MFR[o.mfr]||null;
+ if(o.mfr===6&&o.md&&o.md[2]===1){const t=CDP[o.md[3]&63];if(t){model=t[0];kind=kind||t[1]}}
+ if(!kind&&(o.services||[]).some(s=>/fe2c/i.test(s)))kind='buds';
+ if(!kind&&brand==='Apple'&&!n)kind='phone';
+ const K=KINDS[kind||'unk'];
+ const title=names[o.id]||n||((brand?brand+' ':'')+(model||K[1])+' (name hidden)');
+ return{title,brand:brand||'—',kind:K[1],icon:K[0],color:K[2],model,known:!!(names[o.id]||n)};
+}
+
+/* ---------- data ---------- */
+const devs=new Map();let sel=null,sweep=0,prev=0,last=performance.now(),shown=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hash=s=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return((h>>>0)%3600)/3600*Math.PI*2};
-const dist=o=>Math.pow(10,(-59-o.rs)/25);
+const dist=o=>Math.pow(10,((o.tx!=null?o.tx-41:-59)-o.rs)/25);
 const frac=d=>Math.min(1,Math.log10(1+d)/Math.log10(31));
-const nm=o=>o.name||'Unknown device';
 ble.onDevice(d=>{let o=devs.get(d.id);if(!o){o={id:d.id,ang:hash(d.id),pulse:0,rs:d.rssi};devs.set(d.id,o)}
- o.rs=o.rs*.7+d.rssi*.3;o.rssi=d.rssi;o.address=d.address;o.connectable=d.connectable;o.services=d.services;
- if(d.name)o.name=d.name;if(d.mfr!=null)o.mfr=d.mfr;o.last=Date.now()});
+ o.rs=o.rs*.7+d.rssi*.3;o.rssi=d.rssi;o.address=d.address;o.connectable=d.connectable;if(d.services&&d.services.length)o.services=d.services;
+ if(d.name)o.name=d.name;if(d.mfr!=null)o.mfr=d.mfr;if(d.md)o.md=d.md;if(d.tx!=null)o.tx=d.tx;o.last=Date.now()});
 ble.onState(s=>{const st=document.getElementById('st'),ch=document.getElementById('chip');ch.classList.remove('bad');
  const t={poweredOn:'Scanning for devices…',poweredOff:'Bluetooth is off — turn it on',unauthorized:'Allow Bluetooth for this app in System Settings',unsupported:'No Bluetooth adapter found'}[s.state];
  if(s.state==='error'){ch.classList.add('bad');st.textContent='Error: '+s.msg}else{if(s.state!=='poweredOn')ch.classList.add('bad');st.textContent=t||s.state}});
 const pos=(o,cx,cy,R)=>[cx+Math.cos(o.ang)*R*frac(dist(o)),cy+Math.sin(o.ang)*R*frac(dist(o))];
 C.addEventListener('click',e=>{const r=C.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,cx=W/2,cy=H/2,R=Math.min(W,H)*.43;let best=null,bd=18;
  devs.forEach(o=>{const[p,q]=pos(o,cx,cy,R),d=Math.hypot(p-mx,q-my);if(d<bd){bd=d;best=o}});sel=best?best.id:null;render()});
+
+/* ---------- radar drawing ---------- */
 function frame(t){const dt=Math.min(.05,(t-last)/1e3);last=t;prev=sweep;sweep=(sweep+dt*1.5)%(Math.PI*2);
  const cx=W/2,cy=H/2,R=Math.min(W,H)*.43;x.clearRect(0,0,W,H);
  const g=x.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,'rgba(0,255,170,.10)');g.addColorStop(1,'rgba(0,255,170,.02)');
@@ -61,22 +87,27 @@ function frame(t){const dt=Math.min(.05,(t-last)/1e3);last=t;prev=sweep;sweep=(s
  x.fillStyle=cg;x.beginPath();x.arc(cx,cy,R,0,7);x.fill();
  x.strokeStyle='rgba(120,255,210,.95)';x.lineWidth=2;x.shadowColor='#00ffaa';x.shadowBlur=12;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(sweep)*R,cy+Math.sin(sweep)*R);x.stroke();x.shadowBlur=0;
  x.fillStyle='#00ffaa';x.beginPath();x.arc(cx,cy,4,0,7);x.fill();
- const now=Date.now();
+ const now=Date.now(),TP=Math.PI*2;
  devs.forEach((o,id)=>{if(now-o.last>20000){devs.delete(id);if(sel===id)sel=null;return}
-  const TP=Math.PI*2;if(((o.ang-prev+TP)%TP)<=((sweep-prev+TP)%TP))o.pulse=1;o.pulse=Math.max(0,o.pulse-dt*.3);
-  const[px,py]=pos(o,cx,cy,R),s=sel===id,a=.2+.8*o.pulse;
-  if(o.pulse>0){x.strokeStyle=`rgba(34,211,238,${o.pulse*.6})`;x.lineWidth=1.5;x.beginPath();x.arc(px,py,6+(1-o.pulse)*22,0,7);x.stroke()}
-  x.shadowColor='#22d3ee';x.shadowBlur=14*a;x.fillStyle=s?'#fff':`rgba(34,211,238,${a})`;x.beginPath();x.arc(px,py,4+o.pulse*3+(s?2:0),0,7);x.fill();x.shadowBlur=0;
-  if(o.pulse>.35||s){x.fillStyle=`rgba(215,255,242,${s?1:o.pulse})`;x.font='12px Segoe UI';x.fillText(nm(o),px+10,py+4)}});
+  if(((o.ang-prev+TP)%TP)<=((sweep-prev+TP)%TP))o.pulse=1;o.pulse=Math.max(0,o.pulse-dt*.3);
+  const I=ident(o),[px,py]=pos(o,cx,cy,R),s=sel===id,a=.2+.8*o.pulse;
+  if(o.pulse>0){x.globalAlpha=o.pulse*.6;x.strokeStyle=I.color;x.lineWidth=1.5;x.beginPath();x.arc(px,py,6+(1-o.pulse)*22,0,7);x.stroke()}
+  x.globalAlpha=s?1:a;x.shadowColor=I.color;x.shadowBlur=14*a;x.fillStyle=s?'#fff':I.color;x.beginPath();x.arc(px,py,4+o.pulse*3+(s?2:0),0,7);x.fill();x.shadowBlur=0;
+  if(o.pulse>.35||s){x.globalAlpha=s?1:o.pulse;x.fillStyle='#d7fff2';x.font='12px Segoe UI';x.fillText(I.icon+' '+I.title,px+10,py+4)}x.globalAlpha=1});
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
+
+/* ---------- side panel ---------- */
+function info(o){const I=ident(o),r=(k,v)=>`<div><span>${k}</span><b>${esc(v)}</b></div>`;
+ return r('Type',I.icon+' '+I.kind)+r('Brand',I.brand)+r('Broadcast name',o.name||'(not broadcast)')+r('Address / ID',o.address||o.id)+r('Signal',Math.round(o.rs)+' dBm')+r('Est. distance','~'+dist(o).toFixed(1)+' m')+r('Connectable',o.connectable?'Yes':'No')+r('Last seen',Math.max(0,Math.round((Date.now()-o.last)/1000))+' s ago')}
 function render(){const L=document.getElementById('list'),a=[...devs.values()].sort((p,q)=>dist(p)-dist(q));
  document.getElementById('count').textContent=a.length+(a.length===1?' device':' devices')+' nearby';
- L.innerHTML=a.map(o=>`<div class="it ${sel===o.id?'sel':''}" data-id="${esc(o.id)}"><b>${esc(nm(o))}</b><span>${esc(MFR[o.mfr]||'—')} · ${Math.round(o.rs)} dBm · ~${dist(o).toFixed(1)} m</span></div>`).join('');
+ L.innerHTML=a.map(o=>{const I=ident(o);return`<div class="it ${sel===o.id?'sel':''}" data-id="${esc(o.id)}"><div class="ic">${I.icon}</div><div><b>${esc(I.title)}</b><span>${esc(I.brand)} · ${esc(I.kind)} · ${Math.round(o.rs)} dBm · ~${dist(o).toFixed(1)} m</span></div></div>`}).join('');
  L.querySelectorAll('.it').forEach(e=>e.onclick=()=>{sel=e.dataset.id;render()});
  const o=devs.get(sel),D=document.getElementById('det');
- if(!o){D.innerHTML='<h3>Select a device</h3><span style="color:var(--m)">Click a blip or a list item for details.</span>';return}
- const r=(k,v)=>`<div><span>${k}</span><b>${esc(v)}</b></div>`;
- D.innerHTML=`<h3>${esc(nm(o))}</h3>`+r('Address / ID',o.address||o.id)+r('Maker',MFR[o.mfr]||(o.mfr!=null?'0x'+o.mfr.toString(16):'Unknown'))+r('Signal',Math.round(o.rs)+' dBm')+r('Est. distance','~'+dist(o).toFixed(1)+' m')+r('Connectable',o.connectable?'Yes':'No')+r('Last seen',Math.max(0,Math.round((Date.now()-o.last)/1000))+' s ago')}
+ if(!o){shown=null;D.innerHTML='<h3>Select a device</h3><span style="color:var(--m)">Click a blip or a list item for details.</span>';return}
+ if(shown!==sel){shown=sel;D.innerHTML=`<h3 id="dt"></h3><div id="dinfo"></div><div id="rn"><input id="ri" placeholder="Rename this device (e.g. Realme P1 5G)"><button id="rb">Save</button></div>`;
+  document.getElementById('rb').onclick=()=>{const v=document.getElementById('ri').value.trim();if(v)names[sel]=v;else delete names[sel];localStorage.setItem('radar.names',JSON.stringify(names));render()}}
+ document.getElementById('dt').textContent=ident(o).title;document.getElementById('dinfo').innerHTML=info(o)}
 setInterval(render,600);render();
 </script></body></html>
