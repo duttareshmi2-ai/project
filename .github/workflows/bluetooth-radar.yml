@@ -1,0 +1,30 @@
+name: Build Bluetooth Radar installers
+on:
+  push:
+    tags: ['radar-v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: bluetooth-radar/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - name: Build Windows
+        if: matrix.os == 'windows-latest'
+        run: npx electron-builder --win --publish always
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Build Mac (Apple chip + Intel)
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac --arm64 --x64 --publish always
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }

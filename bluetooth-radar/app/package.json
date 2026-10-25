@@ -1,0 +1,54 @@
+{
+  "name": "adwaitas-bluetooth-radar",
+  "version": "1.0.0",
+  "description": "Adwaita's Bluetooth Radar",
+  "main": "main.js",
+  "author": "Adwaita",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "dependencies": {
+    "@stoprocent/noble": "latest"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.adwaita.bluetoothradar",
+    "productName": "Adwaita's Bluetooth Radar",
+    "npmRebuild": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "Adwaitas-Bluetooth-Radar-Setup.${ext}",
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null,
+      "category": "public.app-category.utilities",
+      "artifactName": "Adwaitas-Bluetooth-Radar-${arch}.${ext}",
+      "extendInfo": {
+        "NSBluetoothAlwaysUsageDescription": "Adwaita's Bluetooth Radar scans for nearby Bluetooth devices.",
+        "NSBluetoothPeripheralUsageDescription": "Adwaita's Bluetooth Radar scans for nearby Bluetooth devices."
+      },
+      "icon": "build/icon.png"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "duttareshmi2-ai",
+        "repo": "project",
+        "releaseType": "release"
+      }
+    ]
+  }
+}
